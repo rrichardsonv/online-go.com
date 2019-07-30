@@ -16,16 +16,21 @@
  */
 
 
+joseki-controls-width=400px
+
+
 .Joseki {
     /* Here follow settings copied from Game.styl, to match behaviour as closely as possible... */
     // (but with center->left for this page because we have only two columns)
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
     position: absolute;
     top: below-navbar;
     bottom: 0;
     right: 0;
     left: 0;
 
-    display: flex;
 
     @media screen and (max-width: 600px) {
         flex-direction: column;
@@ -34,8 +39,6 @@
         flex-direction: row;
     }
 
-
-    align-items: stretch;
 
     .left-col {
         flex-grow: 1;
@@ -66,17 +69,19 @@
     }
 
     .right-col {
-        flex-grow: 1;
-        flex-shrink: 1;
-        flex-basis: 50%;
+        width: joseki-controls-width
+        max-width: 50vw;
+        @media screen and (max-width: 600px) {
+            width: 100vw;
+            max-width: 100vw;
+        }
+
         //width: goban-view-bar-width;
         overflow-y: auto;
         overflow-x: hidden;
         min-height: auto;
         flex-direction: column;
-        flex-basis: 50%;
         padding-left: 0.5rem;
-        min-width: 340px;
     }
 
     /* Here follow overrides, changing shtuff from Games.style... */
