@@ -99,18 +99,12 @@ joseki-controls-width=400px
         height: 100%;
         display: flex;
 
-        .top-bar {
+        .top-bar, .tab-bar {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             align-items: center;
-            flex-wrap: wrap;
-
-            @media screen and (max-width: 600px) {
-                flex-direction: column;
-            }
-            @media screen and (min-width: 600px) {
-                flex-direction: row;
-            }
+            flex-direction: column;
+            margin-top: 1rem;
 
             .throbber-spacer {
                 min-height: 38px;
@@ -120,6 +114,7 @@ joseki-controls-width=400px
             .move-controls {
                 display: flex;
                 align-items: center;
+                margin-top: 1rem;
 
                 i {
                     cursor: pointer;
@@ -226,24 +221,6 @@ joseki-controls-width=400px
             margin-bottom: 0.2rem;
         }
 
-        .position-columns {
-            flex-grow: 1;
-            flex-shrink:0;
-            flex-basis:auto;
-            display: flex;
-
-            .description-column {
-                display: flex;
-                flex-direction: column;
-                flex-grow: 1;
-                flex-basis: 50%;
-
-                .position-description {
-                    flex-grow: 1;   // put source at the bottom
-                    flex-basis: 80%;
-                }
-            }
-        }
 
         .position-tag {
             margin-bottom: 0.2rem;
@@ -263,9 +240,7 @@ joseki-controls-width=400px
                     padding-right: 0.5em;
             }
         }
-        .extra-info-column {
-            margin-top: 3em;
-
+        .tab-body {
             display: flex;
             flex-direction: column;
             flex-grow: 1;
@@ -331,19 +306,14 @@ joseki-controls-width=400px
             }
         }
 
-        .hide {
-            visibility: hidden;
-        }
-
         .move-attributes {
-            display: grid;
-            grid-template-colums: 1fr 1fr;
-            grid-template-rows: auto;
-            grid-row-gap: 1em;
-
             margin-top: 1em
             margin-bottom: 1em;
             padding-right: 1em;
+
+            dt, dt {
+                width: 45%;
+            }
 
             .move-type-selection {
                 span {
@@ -362,24 +332,21 @@ joseki-controls-width=400px
                 }
             }
 
-            .joseki-source-edit {
+
+            .joseki-source-edit-controls {
                 display: flex;
-                flex-direction: column;
-                justify-content: flex-end;
+                align-items: center;
 
-                .joseki-source-edit-controls {
-                    display: flex;
-                    align-items: center;
-
-                    .fa {
-                        padding-left: 0.5rem;
-                    }
+                .fa {
+                    padding-left: 0.5rem;
+                    cursor: pointer;
                 }
             }
         }
 
         .description-edit {
             flex-grow: 2;
+            padding-right: 1.0rem;
 
             .edit-label {
                 font-style: italic;
@@ -388,6 +355,7 @@ joseki-controls-width=400px
 
             textarea {
                 width: 100%;
+                min-height: 8rem;
             }
             .position-edit-button {
                 width: 100%
@@ -399,7 +367,6 @@ joseki-controls-width=400px
         .status-info {
             display: flex;
             flex-direction: column;
-            padding-bottom: 3em;
 
             .hide {
                 display: none;
@@ -473,6 +440,35 @@ joseki-controls-width=400px
                 margin-right: 0.5rem;
             }
 
+        }
+    }
+
+    .below-board-controls {
+        display: flex;
+        min-height: 2rem;
+        //justify-content: space-between;
+        justify-content: center;
+        align-items: center;
+        user-select: none;
+        themed color shade0
+
+        .position-child-count {
+            text-align: right;
+        }
+    }
+
+    .admin-and-updates-link {
+        float: right;
+        text-align: right;
+        padding-right: 1rem;
+
+        .admin-updates-link {
+            font-size: font-size-small
+            themed color shade1
+            cursor: pointer;
+            &:hover {
+                themed color shade0
+            }
         }
     }
 }

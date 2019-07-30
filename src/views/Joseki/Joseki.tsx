@@ -33,10 +33,9 @@ import { Markdown } from "Markdown";
 
 import { Player } from "Player";
 
-import { JosekiAdmin } from "JosekiAdmin";
-
 import {openModal} from 'Modal';
 import {JosekiSourceModal} from "JosekiSourceModal";
+import {JosekiAdminModal} from "JosekiAdminModal";
 import {JosekiVariationFilter} from "JosekiVariationFilter";
 import {JosekiTagSelector} from "JosekiTagSelector";
 import {Throbber} from "Throbber";
@@ -155,7 +154,7 @@ export class Joseki extends React.Component<JosekiProps, any> {
             tags: [],   // The tags that are on the current position
             variation_filter: {contributor: null, tags: null, source: null},
 
-            count_details_open: false,
+            count_details_open: true,
             tag_counts: [],
             counts_throb: false
         };
@@ -588,11 +587,35 @@ export class Joseki extends React.Component<JosekiProps, any> {
         );
     }
 
-    setAdminMode = () => {
+    openAdminOrUpdates = () => {
         this.resetBoard();
+        /*
         this.setState({
             mode: PageMode.Admin
         });
+        */
+        openModal(
+            <JosekiAdminModal
+                godojo_headers={godojo_headers}
+                server_url={server_url}
+                user_can_administer={this.state.user_can_administer}
+                loadPositionToBoard = {this.loadPosition}
+                fastDismiss />
+        );
+
+        // console.log("Mode pane render ", this.state.variation_filter);
+            /*
+        if (this.state.mode === PageMode.Admin) {
+            return (
+                <JosekiAdmin
+                    godojo_headers={godojo_headers}
+                    server_url={server_url}
+                    user_can_administer={this.state.user_can_administer}
+                    loadPositionToBoard = {this.loadPosition}
+                />
+            );
+        }
+        */
     }
 
     setExploreMode = () => {
@@ -704,16 +727,6 @@ export class Joseki extends React.Component<JosekiProps, any> {
 
         const show_pass_available = this.state.pass_available && this.state.mode !== PageMode.Play;
 
-        const count_details = this.state.count_details_open ?
-            <React.Fragment>
-                {this.state.tag_counts.filter((t) => (t.count > 0)).map((t, idx) => (
-                    <div className="variation-count-item" key={idx}>
-                        <span>{t.tagname}:</span><span>{t.count}</span></div>
-                ))}
-            </React.Fragment>
-            : "";
-
-
         return (
             <div className={"Joseki"}>
                 <KBShortcut shortcut="home" action={this.resetBoard} />
@@ -726,24 +739,36 @@ export class Joseki extends React.Component<JosekiProps, any> {
                 </div>
                 <div className="right-col">
                     <div className="top-bar">
+                        <div>
+                            {this.renderModeControl()}
+                        </div>
+
                         <div className={"move-controls" + (this.played_mistake ? " highlight" : "")}>
-                        <i className="fa fa-fast-backward" onClick={this.resetBoard}></i>
+                            <i className="fa fa-fast-backward" onClick={this.resetBoard}></i>
                             <i className={"fa fa-step-backward" + ((this.state.mode !== PageMode.Play || this.played_mistake) ? "" : " hide")} onClick={this.backOneMove}></i>
                             <div
                                 className={"pass-button" + (show_pass_available ? " pass-available" : "")}
                                 onClick={this.doPass}>
                                 Pass
                             </div>
-                            <div className="throbber-spacer">
-                                <Throbber throb={this.state.throb}/>
-                            </div>
                         </div>
-                        {this.renderModeControl()}
                     </div>
 
+                    <Throbber throb={this.state.throb}/>
                     {this.renderModeMainPane()}
 
                     <div className={"status-info" + (this.state.move_string === "" ? " hide" : "")} >
+                        <div className="position-child-count">
+                            This position leads to {this.state.child_count} others.
+                        </div>
+                        <div className="count-details">
+                            <Throbber throb={this.state.counts_throb}/>
+                            {this.state.tag_counts.filter((t) => (t.count > 0)).map((t, idx) => (
+                                <div className="variation-count-item" key={idx}>
+                                    <span>{t.tagname}:</span><span>{t.count}</span></div>
+                            ))}
+                        </div>
+
                         <div className="move-category">
                             {this.state.current_move_category === "" ? "" :
                                 "Last move: " +
@@ -757,38 +782,17 @@ export class Joseki extends React.Component<JosekiProps, any> {
 
                             <span>Contributor:</span> <Player user={this.state.contributor_id} />
                         </div>
-                            <div>Moves made:</div>
+                        <div>Moves made:</div>
                             <div className="moves-made">
                             {this.state.current_move_category !== "new" ?
                             <Link className="moves-made-string" to={'/joseki/' + this.state.current_node_id}>{this.state.move_string}</Link> :
                             <span className="moves-made-string">{this.state.move_string}</span>}
                         </div>
-                    </div>
-                    <div className="continuations-pane">
-                    {(this.state.child_count !== null && this.state.child_count !== 0) &&
-                        <React.Fragment>
-                            <div className="position-child-count">
-                                This position leads to {this.state.child_count} others.
-                            </div>
-                            <div className={"child-count-details-pane" + (this.state.count_details_open ? " details-pane-open" : "")}>
-                                {!this.state.count_details_open &&
-                                    <i className="fa fa-info-circle" onClick={this.showCurrentVariationCounts}></i>
-                                }
-                                {this.state.count_details_open &&
-                                <React.Fragment>
-                                    <div className="variation-count-header">
-                                        <div>Continuations:</div>
-                                        <i className="fa fa-caret-right" onClick={this.hideVariationCounts} />
-                                    </div>
-                                    <div className="count-details">
-                                        <Throbber throb={this.state.counts_throb}/>
-                                        {count_details}
-                                    </div>
-                                </React.Fragment>
-                                }
-                            </div>
-                        </React.Fragment>
-                    }
+                        <div className='admin-and-updates-link'>
+                            <span className='admin-updates-link' onClick={this.openAdminOrUpdates}>
+                                {this.state.user_can_administer ? _("Admin") : _("Updates")}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -796,38 +800,24 @@ export class Joseki extends React.Component<JosekiProps, any> {
     }
 
     renderModeControl = () => (
-        <div className="mode-control">
-            <button className={"btn s primary " + (this.state.mode === PageMode.Explore ? "selected" : "")} onClick={this.setExploreMode}>
+        <div className="mode-control btn-group">
+            <button className={"btn s " + (this.state.mode === PageMode.Explore ? "primary" : "")} onClick={this.setExploreMode}>
                 {_("Explore")}
             </button>
-            <button className={"btn s primary " + (this.state.mode === PageMode.Play ? "selected" : "")} onClick={this.setPlayMode}>
+            <button className={"btn s " + (this.state.mode === PageMode.Play ? "primary" : "")} onClick={this.setPlayMode}>
                 {_("Play")}
             </button>
             {this.state.user_can_edit &&
             <button
-                className={"btn s primary " + (this.state.mode === PageMode.Edit ? "selected" : "")} onClick={this.setEditMode}>
+                className={"btn s " + (this.state.mode === PageMode.Edit ? "primary" : "")} onClick={this.setEditMode}>
                 {this.state.current_move_category === "new" && this.state.mode === PageMode.Explore ? _("Save") : _("Edit")}
             </button>
             }
-            <button className={"btn s primary " + (this.state.mode === PageMode.Admin ? "selected" : "")} onClick={this.setAdminMode}>
-                {this.state.user_can_administer ? _("Admin") : _("Updates")}
-            </button>
         </div>
     )
 
     renderModeMainPane = () => {
-        // console.log("Mode pane render ", this.state.variation_filter);
-        if (this.state.mode === PageMode.Admin) {
-            return (
-                <JosekiAdmin
-                    godojo_headers={godojo_headers}
-                    server_url={server_url}
-                    user_can_administer={this.state.user_can_administer}
-                    loadPositionToBoard = {this.loadPosition}
-                />
-            );
-        }
-        else if (this.state.mode === PageMode.Explore ||
+        if (this.state.mode === PageMode.Explore ||
             (this.state.mode === PageMode.Edit && this.state.move_string === "" )// you can't edit the empty board
         ) {
             return (
@@ -842,7 +832,7 @@ export class Joseki extends React.Component<JosekiProps, any> {
                     set_variation_filter = {this.updateVariationFilter}
                     current_filter = {this.state.variation_filter}
                     child_count = {this.state.child_count}
-                    show_comments = {this.show_comments_requested}
+                    show_comments = {true /*this.show_comments_requested */}
                 />
             );
         }
@@ -1191,39 +1181,39 @@ class EditPane extends React.Component<EditProps, any> {
 
         return (
             <div className="edit-container">
-                <div className="move-attributes">
-                    <div className="move-type-selection">
-                        <span>{_("This sequence is: ")}</span>
+                <dl className="move-attributes">
+                    <dt>{pgettext("A joseki sequence", "sequence")}</dt>
+                    <dd>
                         <select value={this.state.move_type} onChange={this.onTypeChange}>
                             {selections}
                         </select>
-                    </div>
-                    <div className="variation-order-select">
-                        <span>{_("Variation label:")}</span>
+                    </dd>
+
+                    <dt>{pgettext("The letter a joseki variation is labeled with", "Label")}</dt>
+                    <dd>
                         <select value={this.state.variation_label} onChange={this.onLabelChange}>
                             {labels}
                         </select>
-                    </div>
+                    </dd>
 
-                    <div className="joseki-source-edit">
-                        <div>Source:</div>
-                        <div className="joseki-source-edit-controls">
-                            <select value={this.state.joseki_source} onChange={this.onSourceChange}>
-                                {sources}
-                            </select>
-                            <i className="fa fa-plus-circle" onClick={this.promptForJosekiSource}/>
-                        </div>
-                    </div>
-                    <div className="tag-edit">
-                        <div>Tags:</div>
+                    <dt>{pgettext("The source of the joseki being entered", "Source")}</dt>
+                    <dd className="joseki-source-edit-controls">
+                        <select value={this.state.joseki_source} onChange={this.onSourceChange}>
+                            {sources}
+                        </select>
+                        <i className="fa fa-plus-circle" onClick={this.promptForJosekiSource}/>
+                    </dd>
+
+                    <dt className="tag-edit">{pgettext("Joseki tags", "Tags")}</dt>
+                    <dd>
                         <JosekiTagSelector
                             godojo_headers={godojo_headers}
                             tag_list_url = {server_url + "tags"}
                             selected_tags= {this.state.tags}
                             on_tag_update={this.onTagChange}
                         />
-                    </div>
-                </div>
+                    </dd>
+                </dl>
                 <div className="description-edit">
 
                     <div className="edit-label">{_("Position description")}:</div>
@@ -1278,7 +1268,8 @@ class ExplorePane extends React.Component<ExploreProps, any> {
             forum_thread: "",
             audit_log: [],
             next_comment: "",
-            extra_throb: false
+            extra_throb: false,
+            tab: "description",
         };
     }
 
@@ -1332,6 +1323,8 @@ class ExplorePane extends React.Component<ExploreProps, any> {
             console.log("Comments GET failed:", r);
         });
         this.setState({ extra_info_selected: "comments" });
+
+        this.showAuditLog(); /* hack to always retrieve log too */
     }
 
     extractCommentary = (commentary_dto) => {
@@ -1354,6 +1347,9 @@ class ExplorePane extends React.Component<ExploreProps, any> {
 
     hideExtraInfo = () => {
         this.setState({ extra_info_selected: "none" });
+    }
+    setTab = (tab) => {
+        this.setState({tab});
     }
 
     showAuditLog = () => {
@@ -1411,10 +1407,12 @@ class ExplorePane extends React.Component<ExploreProps, any> {
     }
 
     render = () => {
-        const filter_active =
-            ((this.props.current_filter.tags !== null && this.props.current_filter.tags.length !== 0) ||
-            this.props.current_filter.contributor !== null ||
-            this.props.current_filter.source !== null);
+        const filter_count =
+            (this.props.current_filter.tags ? this.props.current_filter.tags.length : 0) +
+            (this.props.current_filter.contributor !== null ? 1 : 0) +
+            (this.props.current_filter.source !== null ? 1 : 0);
+
+        const filter_active = filter_count > 0;
 
         // Highlight marks
         const description = this.props.description.replace(/<([A-Z]):([A-Z][0-9]{1,2})>/mg, '**$1**');
@@ -1429,33 +1427,37 @@ class ExplorePane extends React.Component<ExploreProps, any> {
         return (
             <div className="position-details">
                 <div className="position-columns">
-                    <div className="description-column">
-                        {this.props.position_type !== "new" ?
-                        <div className="position-description">
-                            <Markdown source={description} />
+                    <div className='tab-bar'>
+                        <div className='btn-group'>
+                            <button className={'btn sm ' + (this.state.tab === "description" ? 'primary' : '')} onClick={() => this.setTab("description")}>
+                                {_("Description")}
+                            </button>
+                            <button className={'btn sm ' + (this.state.tab === "comments" ? 'primary' : '')} onClick={() => this.setTab("comments")}>
+                                {_("Comments")} ({this.state.commentary.length})
+                            </button>
+                            <button className={'btn sm ' + (this.state.tab === "log" ? 'primary' : '')} onClick={() => this.setTab("log")}>
+                                {_("Log")} ({this.state.audit_log.length})
+                            </button>
+                            <button className={'btn sm ' + (this.state.tab === "filter" ? 'primary' : '')} onClick={() => this.setTab("filter")}>
+                                {_("Filter")} ({filter_count})
+                            </button>
                         </div>
-                        : ""}
                     </div>
-                    <div className={"extra-info-column" + (this.state.extra_info_selected !== "none" ? " extra-info-open" : "")}>
-                        {this.state.extra_info_selected === "none" && this.props.position_type !== "new" &&
-                            <React.Fragment>
-                                <i className={"fa fa-filter" + (filter_active ? " filter-active" : "")}
-                                        onClick={this.showFilterSelector} />
-                                {(this.props.comment_count !== 0 ?
-                                    <i className="fa fa-comments-o fa-lg" onClick={this.showComments} /> :
-                                    <i className="fa fa-comment-o fa-lg" onClick={this.showComments} />)}
+                    <div className='tab-body'>
 
-                                <i className="fa fa-history" onClick={this.showAuditLog}></i>
-                            </React.Fragment>
+                        {this.state.tab === "description" &&
+                            <div className="description-column">
+                                {this.props.position_type !== "new" ?
+                                <div className="position-description">
+                                    <Markdown source={description} />
+                                </div>
+                                : ""}
+                            </div>
                         }
 
-                        {this.state.extra_info_selected === "comments" &&
+                        {this.state.tab === "comments" &&
                             <React.Fragment>
                                 <div className="discussion-container">
-                                    <div className="extra-info-header">
-                                        <div>Discussion:</div>
-                                        <i className="fa fa-caret-right" onClick={this.hideExtraInfo} />
-                                    </div>
                                     {this.state.forum_thread !== "" && false && // let's not do this actually! Keep discussion on this page.
                                     <div className="comment-thread">
                                         <a href={this.state.forum_thread}>(see: forum discussion)</a>
@@ -1478,13 +1480,9 @@ class ExplorePane extends React.Component<ExploreProps, any> {
                             </React.Fragment>
                         }
 
-                        {this.state.extra_info_selected === "audit-log" &&
+                        {this.state.tab === "log" &&
                             <React.Fragment>
                                 <div className="audit-container">
-                                    <div className="extra-info-header">
-                                            <div>Audit Log:</div>
-                                            <i className="fa fa-caret-right" onClick={this.hideExtraInfo} />
-                                    </div>
                                     <div className="audit-entries">
                                         <Throbber throb={this.state.extra_throb}/>
                                         {this.state.audit_log.map((audit, idx) =>
@@ -1501,13 +1499,9 @@ class ExplorePane extends React.Component<ExploreProps, any> {
                             </React.Fragment>
                         }
 
-                        {this.state.extra_info_selected === "variation-filter" &&
+                        {this.state.tab === "filter" &&
                             <React.Fragment>
                                 <div className="filter-container">
-                                    <div className="extra-info-header">
-                                            <div>Variation filter:</div>
-                                            <i className="fa fa-caret-right" onClick={this.hideExtraInfo} />
-                                    </div>
                                     <Throbber throb={this.state.extra_throb}/>
                                     <JosekiVariationFilter
                                         contributor_list_url={server_url + "contributors"}

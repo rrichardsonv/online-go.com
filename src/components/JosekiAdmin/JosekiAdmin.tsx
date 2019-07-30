@@ -26,7 +26,7 @@ import { Player } from "Player";
 
 import { JosekiPermissionsPanel } from "JosekiPermissionsPanel";
 
-interface JosekiAdminProps {
+export interface JosekiAdminProps {
     godojo_headers: any;
     server_url: string;
     user_can_administer: boolean;
