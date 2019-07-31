@@ -16,6 +16,7 @@
  */
 
 import * as React from "react";
+import * as moment from 'moment';
 import { _, pgettext, interpolate } from "translate";
 
 import ReactTable from 'react-table';
@@ -216,36 +217,33 @@ export class JosekiAdmin extends React.PureComponent<JosekiAdminProps, any> {
                         });
                     }}
                     onFetchData={this.fetchDataForTable}
-                    columns={[
-                        {
-                            Header: "At", accessor: "placement",
-                            maxWidth: 60,
-                            // Click the placement to see the position on the board
-                            getProps: (state, rowInfo, column) => (
-                                {
-                                    onClick: (e, handleOriginal) => {
-                                        this.props.loadPositionToBoard(rowInfo.original.node_id);
-                                    },
-                                    className: "position-link"
+                    columns={
+                        [
+                            {
+                                "header": _("Entries"),
+                                Cell: props => {
+                                    const e = props.original;
+                                    return (
+                                        <div className="admin-row">
+                                            <div className='top'>
+                                                <div>
+                                                    <span className='position-link' onClick={() => this.props.loadPositionToBoard(e.node_id)}>
+                                                        {e.placement}
+                                                    </span>
+                                                    <span><Player user={e.user_id}></Player></span>
+                                                </div>
+                                                <span>{moment(e.date).format('LL')}</span>
+                                            </div>
+                                            <div className='bottom'>
+                                                <span>{e.comment}</span>
+                                                <span>{e.new_value}</span>
+                                            </div>
+                                        </div>
+                                    )
                                 }
-                            )
-                        },
-                        {
-                            Header: "User", accessor: "user_id",
-                            Cell: props => <Player user={props.value}></Player>
-                        },
-                        {
-                            Header: "Date", accessor: "date",
-                        },
-                        {
-                            Header: "Action", accessor: "comment",
-                            minWidth: 200
-                        },
-                        {
-                            Header: "Result", accessor: "new_value",
-                            minWidth: 250
-                        }
-                    ]}
+                            }
+                        ]
+                    }
                 />
                 {this.props.user_can_administer &&
                 <div className="bottom-admin-stuff">

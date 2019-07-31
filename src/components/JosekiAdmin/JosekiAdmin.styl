@@ -29,6 +29,8 @@
     }
 
     .position-link {
+        width: 3rem;
+        display: inline-block;
         themed color link-color;
     }
 
@@ -39,6 +41,19 @@
 
     .ReactTable, .ReactTable * {
         themed border-color shade5 !important;
+    }
+
+    .admin-row {
+        .top, .bottom {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+
+            span {
+                padding-right: 0.25rem;
+                padding-left: 0.25rem;
+            }
+        }
     }
 
     .pagination-bottom .-pagination {
