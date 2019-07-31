@@ -444,8 +444,6 @@ export class LadderRow extends React.Component<LadderRowProperties, any> {
                     </div>
                 }
 
-
-
                 {((challenging && challenging.length) || null) &&
                     <div className='outgoing'>
                         <b>{_("Challenging") /* Translators: List of players that have been challenged by this player in a ladder */}: </b>

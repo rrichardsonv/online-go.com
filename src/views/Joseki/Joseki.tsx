@@ -34,10 +34,10 @@ import { Markdown } from "Markdown";
 import { Player } from "Player";
 
 import {openModal} from 'Modal';
+import {JosekiAdmin} from "JosekiAdmin";
 import {JosekiSourceModal} from "JosekiSourceModal";
-import {JosekiAdminModal} from "JosekiAdminModal";
-import {JosekiVariationFilter} from "JosekiVariationFilter";
 import {JosekiTagSelector} from "JosekiTagSelector";
+import {JosekiVariationFilter} from "JosekiVariationFilter";
 import {Throbber} from "Throbber";
 
 const server_url = data.get("joseki-url", "/godojo/");
@@ -156,7 +156,8 @@ export class Joseki extends React.Component<JosekiProps, any> {
 
             count_details_open: true,
             tag_counts: [],
-            counts_throb: false
+            counts_throb: false,
+            show_extra_info: false,
         };
 
         this.goban_div = $("<div className='Goban'>");
@@ -589,11 +590,10 @@ export class Joseki extends React.Component<JosekiProps, any> {
 
     openAdminOrUpdates = () => {
         this.resetBoard();
-        /*
         this.setState({
             mode: PageMode.Admin
         });
-        */
+        /*
         openModal(
             <JosekiAdminModal
                 godojo_headers={godojo_headers}
@@ -602,6 +602,7 @@ export class Joseki extends React.Component<JosekiProps, any> {
                 loadPositionToBoard = {this.loadPosition}
                 fastDismiss />
         );
+        */
 
         // console.log("Mode pane render ", this.state.variation_filter);
             /*
@@ -722,6 +723,14 @@ export class Joseki extends React.Component<JosekiProps, any> {
         this.setState({count_details_open: false});
     }
 
+    toggleTab = (tab) => {
+        let state_key = "show_" + tab;
+        let update = {};
+        update[state_key] = !this.state[state_key];
+        this.setState(update);
+        console.log(update);
+    }
+
     render() {
         console.log("Joseki app rendering ", this.state.move_string, this.state.current_move_category);
 
@@ -735,6 +744,12 @@ export class Joseki extends React.Component<JosekiProps, any> {
                 <div className={"left-col" + (this.state.mode === PageMode.Admin ? " admin-mode" : "")}>
                     <div ref="goban_container" className="goban-container">
                         <PersistentElement className="Goban" elt={this.goban_div} />
+                    </div>
+
+                    <div className='below-board'>
+                        <div className="position-child-count">
+                            This position leads to {this.state.child_count} others.
+                        </div>
                     </div>
                 </div>
                 <div className="right-col">
@@ -757,42 +772,15 @@ export class Joseki extends React.Component<JosekiProps, any> {
                     <Throbber throb={this.state.throb}/>
                     {this.renderModeMainPane()}
 
-                    <div className={"status-info" + (this.state.move_string === "" ? " hide" : "")} >
-                        <div className="position-child-count">
-                            This position leads to {this.state.child_count} others.
-                        </div>
-                        <div className="count-details">
-                            <Throbber throb={this.state.counts_throb}/>
-                            {this.state.tag_counts.filter((t) => (t.count > 0)).map((t, idx) => (
-                                <div className="variation-count-item" key={idx}>
-                                    <span>{t.tagname}:</span><span>{t.count}</span></div>
-                            ))}
-                        </div>
-
-                        <div className="move-category">
-                            {this.state.current_move_category === "" ? "" :
-                                "Last move: " +
-                                (this.state.current_move_category === "new" ? (
-                                    this.state.mode === PageMode.Explore ? "Experiment" : "Proposed Move") :
-                                    this.state.current_move_category)}
-                        </div>
-
-                        <div className={"contributor" +
-                            ((this.state.current_move_category === "new") ? " hide" : "")}>
-
-                            <span>Contributor:</span> <Player user={this.state.contributor_id} />
-                        </div>
-                        <div>Moves made:</div>
-                            <div className="moves-made">
-                            {this.state.current_move_category !== "new" ?
-                            <Link className="moves-made-string" to={'/joseki/' + this.state.current_node_id}>{this.state.move_string}</Link> :
-                            <span className="moves-made-string">{this.state.move_string}</span>}
-                        </div>
-                        <div className='admin-and-updates-link'>
-                            <span className='admin-updates-link' onClick={this.openAdminOrUpdates}>
-                                {this.state.user_can_administer ? _("Admin") : _("Updates")}
-                            </span>
-                        </div>
+                    <div className='bottom-links'>
+                        <span
+                            className={'extra-info-link ' + (this.state.mode !== PageMode.Explore ? 'hide' : '')}
+                            onClick={() => this.toggleTab("extra_info")}>
+                            {pgettext("Show extra information about this joseki position", "Info")}
+                        </span>
+                        <span className='admin-updates-link' onClick={this.openAdminOrUpdates}>
+                            {this.state.user_can_administer ? _("Admin") : _("Updates")}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -817,7 +805,17 @@ export class Joseki extends React.Component<JosekiProps, any> {
     )
 
     renderModeMainPane = () => {
-        if (this.state.mode === PageMode.Explore ||
+        if (this.state.mode === PageMode.Admin) {
+            return (
+                <JosekiAdmin
+                    godojo_headers={godojo_headers}
+                    server_url={server_url}
+                    user_can_administer={this.state.user_can_administer}
+                    loadPositionToBoard = {this.loadPosition}
+                />
+            );
+        }
+        else if (this.state.mode === PageMode.Explore ||
             (this.state.mode === PageMode.Edit && this.state.move_string === "" )// you can't edit the empty board
         ) {
             return (
@@ -829,9 +827,11 @@ export class Joseki extends React.Component<JosekiProps, any> {
                     can_comment={this.state.user_can_comment}
                     joseki_source={this.state.joseki_source}
                     tags={this.state.tags}
+                    tag_counts={this.state.tag_counts}
                     set_variation_filter = {this.updateVariationFilter}
                     current_filter = {this.state.variation_filter}
                     child_count = {this.state.child_count}
+                    show_extra_info={this.state.show_extra_info}
                     show_comments = {true /*this.show_comments_requested */}
                 />
             );
@@ -1250,10 +1250,12 @@ interface ExploreProps {
     can_comment: boolean;
     joseki_source: {url: string, description: string};
     tags: Array<any>;
+    tag_counts: Array<any>;
     set_variation_filter: any;
     current_filter: {contributor: number, tags: number[], source: number};
     child_count: number;
     show_comments: boolean;
+    show_extra_info: boolean;
 }
 
 class ExplorePane extends React.Component<ExploreProps, any> {
@@ -1269,7 +1271,10 @@ class ExplorePane extends React.Component<ExploreProps, any> {
             audit_log: [],
             next_comment: "",
             extra_throb: false,
-            tab: "description",
+            show_description: true,
+            show_filter: false,
+            show_comments: false,
+            show_log: false,
         };
     }
 
@@ -1348,8 +1353,11 @@ class ExplorePane extends React.Component<ExploreProps, any> {
     hideExtraInfo = () => {
         this.setState({ extra_info_selected: "none" });
     }
-    setTab = (tab) => {
-        this.setState({tab});
+    toggleTab = (tab) => {
+        let state_key = "show_" + tab;
+        let update = {};
+        update[state_key] = !this.state[state_key];
+        this.setState(update);
     }
 
     showAuditLog = () => {
@@ -1429,23 +1437,38 @@ class ExplorePane extends React.Component<ExploreProps, any> {
                 <div className="position-columns">
                     <div className='tab-bar'>
                         <div className='btn-group'>
-                            <button className={'btn sm ' + (this.state.tab === "description" ? 'primary' : '')} onClick={() => this.setTab("description")}>
+                            <button className={'btn sm ' + (this.state.show_description ? 'primary' : '')} onClick={() => this.toggleTab("description")}>
                                 {_("Description")}
                             </button>
-                            <button className={'btn sm ' + (this.state.tab === "comments" ? 'primary' : '')} onClick={() => this.setTab("comments")}>
+                            <button className={'btn sm ' + (this.state.show_comments ? 'primary' : '')} onClick={() => this.toggleTab("comments")}>
                                 {_("Comments")} ({this.state.commentary.length})
                             </button>
-                            <button className={'btn sm ' + (this.state.tab === "log" ? 'primary' : '')} onClick={() => this.setTab("log")}>
+                            <button className={'btn sm ' + (this.state.show_log ? 'primary' : '')} onClick={() => this.toggleTab("log")}>
                                 {_("Log")} ({this.state.audit_log.length})
                             </button>
-                            <button className={'btn sm ' + (this.state.tab === "filter" ? 'primary' : '')} onClick={() => this.setTab("filter")}>
+                            <button className={'btn sm ' + (this.state.show_filter ? 'primary' : '')} onClick={() => this.toggleTab("filter")}>
                                 {_("Filter")} ({filter_count})
                             </button>
                         </div>
                     </div>
                     <div className='tab-body'>
+                        {this.state.show_filter &&
+                            <React.Fragment>
+                                <div className="filter-container">
+                                    <Throbber throb={this.state.extra_throb}/>
+                                    <JosekiVariationFilter
+                                        contributor_list_url={server_url + "contributors"}
+                                        tag_list_url = {server_url + "tags"}
+                                        source_list_url = {server_url + "josekisources"}
+                                        current_filter = {this.props.current_filter}
+                                        godojo_headers={godojo_headers}
+                                        set_variation_filter={this.props.set_variation_filter}
+                                    />
+                                </div>
+                            </React.Fragment>
+                        }
 
-                        {this.state.tab === "description" &&
+                        {this.state.show_description &&
                             <div className="description-column">
                                 {this.props.position_type !== "new" ?
                                 <div className="position-description">
@@ -1455,7 +1478,7 @@ class ExplorePane extends React.Component<ExploreProps, any> {
                             </div>
                         }
 
-                        {this.state.tab === "comments" &&
+                        {this.state.show_comments &&
                             <React.Fragment>
                                 <div className="discussion-container">
                                     {this.state.forum_thread !== "" && false && // let's not do this actually! Keep discussion on this page.
@@ -1480,7 +1503,7 @@ class ExplorePane extends React.Component<ExploreProps, any> {
                             </React.Fragment>
                         }
 
-                        {this.state.tab === "log" &&
+                        {this.state.show_log &&
                             <React.Fragment>
                                 <div className="audit-container">
                                     <div className="audit-entries">
@@ -1499,21 +1522,44 @@ class ExplorePane extends React.Component<ExploreProps, any> {
                             </React.Fragment>
                         }
 
-                        {this.state.tab === "filter" &&
+                        {this.props.show_extra_info &&
                             <React.Fragment>
-                                <div className="filter-container">
-                                    <Throbber throb={this.state.extra_throb}/>
-                                    <JosekiVariationFilter
-                                        contributor_list_url={server_url + "contributors"}
-                                        tag_list_url = {server_url + "tags"}
-                                        source_list_url = {server_url + "josekisources"}
-                                        current_filter = {this.props.current_filter}
-                                        godojo_headers={godojo_headers}
-                                        set_variation_filter={this.props.set_variation_filter}
-                                    />
+                                <div className="status-info">
+                                    <div className="count-details">
+                                        <Throbber throb={this.state.counts_throb}/>
+                                        {this.props.tag_counts.filter((t) => (t.count > 0)).map((t, idx) => (
+                                            <div className="variation-count-item" key={idx}>
+                                                <span>{t.tagname}:</span><span>{t.count}</span></div>
+                                        ))}
+                                    </div>
+
+                                    {this.state.current_move_category &&
+                                        <div className="move-category">
+                                            {this.state.current_move_category === "" ? "" :
+                                                "Last move: " +
+                                                (this.state.current_move_category === "new" ? (
+                                                    this.state.mode === PageMode.Explore ? "Experiment" : "Proposed Move") :
+                                                    this.state.current_move_category)}
+                                        </div>
+                                    }
+
+                                    {this.state.contributor_id > 0 &&
+                                        <div className={"contributor" +
+                                            ((this.state.current_move_category === "new") ? " hide" : "")}>
+
+                                            <span>Contributor:</span> <Player user={this.state.contributor_id} />
+                                        </div>
+                                    }
+                                    <div>Moves made:</div>
+                                        <div className="moves-made">
+                                        {this.state.current_move_category !== "new" ?
+                                        <Link className="moves-made-string" to={'/joseki/' + this.state.current_node_id}>{this.state.move_string}</Link> :
+                                        <span className="moves-made-string">{this.state.move_string}</span>}
+                                    </div>
                                 </div>
                             </React.Fragment>
                         }
+
                     </div>
                 </div>
                 {this.props.position_type !== "new" &&

@@ -368,9 +368,6 @@ joseki-controls-width=400px
             display: flex;
             flex-direction: column;
 
-            .hide {
-                display: none;
-            }
 
             .moves-made {
                 display: flex;
@@ -443,11 +440,11 @@ joseki-controls-width=400px
         }
     }
 
-    .below-board-controls {
+    .below-board {
         display: flex;
         min-height: 2rem;
         //justify-content: space-between;
-        justify-content: center;
+        justify-content: flex-end;
         align-items: center;
         user-select: none;
         themed color shade0
@@ -457,12 +454,12 @@ joseki-controls-width=400px
         }
     }
 
-    .admin-and-updates-link {
-        float: right;
-        text-align: right;
+    .bottom-links{
+        display: flex;
+        justify-content: space-between;
         padding-right: 1rem;
 
-        .admin-updates-link {
+        .extra-info-link, .admin-updates-link {
             font-size: font-size-small
             themed color shade1
             cursor: pointer;
@@ -470,5 +467,9 @@ joseki-controls-width=400px
                 themed color shade0
             }
         }
+    }
+
+    .hide {
+        visibility: hidden;
     }
 }
