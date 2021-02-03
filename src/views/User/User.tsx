@@ -48,6 +48,8 @@ import {associations} from 'associations';
 import {browserHistory} from "ogsHistory";
 import {chat_markup} from "Chat";
 import {Toggle} from 'Toggle';
+import {challenge} from 'ChallengeModal';
+import {navigateTo} from 'misc';
 
 declare let swal;
 
@@ -117,7 +119,12 @@ export class User extends React.PureComponent<UserProperties, any> {
 
     constructor(props) {
         super(props);
+
+        const queryParams = parse(props.location.search)
+
         this.state = {
+            challenging_player_id: queryParams["challenging_player_id"] || null,
+            pending_challenge: "challenging_player_id" in queryParams,
             user: null,
             vs: {},
             ratings: {},
@@ -138,7 +145,7 @@ export class User extends React.PureComponent<UserProperties, any> {
             show_ratings_in_rating_grid: preferences.get('show-ratings-in-rating-grid'),
         };
 
-        this.show_mod_log = parse(this.props.location.search)['show_mod_log'] === '1';
+        this.show_mod_log = queryParams['show_mod_log'] === '1';
     }
 
     componentDidMount() {
@@ -207,7 +214,11 @@ export class User extends React.PureComponent<UserProperties, any> {
             } catch (err) {
                 console.error(err.stack);
             }
-        }).catch((err) => {
+        })
+        .then(() => {
+            this.maybeTriggerChallenge()
+        })
+        .catch((err) => {
             console.error(err);
             this.setState({"user": null});
         });
@@ -441,6 +452,30 @@ export class User extends React.PureComponent<UserProperties, any> {
             this.saveEditChanges();
         } else {
             this.setState({editing: true});
+        }
+    }
+    maybeTriggerChallenge = () => {
+        const {
+            challenging_player_id: player_id,
+            resolved,
+            pending_challenge,
+            user
+        } = this.state;
+
+        if (!user) {
+            navigateTo(`/sign-in#/${window.location.pathname}${window.location.search}`)
+        } else {
+            try {
+                const can_and_should_challenge = user && resolved && player_id && pending_challenge;
+
+                if (can_and_should_challenge) {
+                    challenge(player_id, null, false);
+                    this.setState({ pending_challenge: false, challenging_player_id: null });
+                }
+            } catch (err) {
+                this.setState({ pending_challenge: false, challenging_player_id: null });
+                console.error(err.stack);
+            }
         }
     }
     toggleRatings = () => {
