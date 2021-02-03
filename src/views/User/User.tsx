@@ -123,8 +123,7 @@ export class User extends React.PureComponent<UserProperties, any> {
         const queryParams = parse(props.location.search)
 
         this.state = {
-            challenging_player_id: queryParams["challenging_player_id"] || null,
-            pending_challenge: "challenging_player_id" in queryParams,
+            pending_challenge: queryParams["challenging"] == "1"
             user: null,
             vs: {},
             ratings: {},
@@ -455,25 +454,18 @@ export class User extends React.PureComponent<UserProperties, any> {
         }
     }
     maybeTriggerChallenge = () => {
-        const {
-            challenging_player_id: player_id,
-            resolved,
-            pending_challenge,
-            user
-        } = this.state;
-
-        if (!user) {
+        if (!this.state.user) {
             navigateTo(`/sign-in#/${window.location.pathname}${window.location.search}`)
         } else {
             try {
-                const can_and_should_challenge = user && resolved && player_id && pending_challenge;
+                const can_and_should_challenge = this.state.user && this.state.resolved && this.state.pending_challenge;
 
                 if (can_and_should_challenge) {
-                    challenge(player_id, null, false);
-                    this.setState({ pending_challenge: false, challenging_player_id: null });
+                    challenge(this.state.user.id, null, false);
+                    this.setState({ pending_challenge: false });
                 }
             } catch (err) {
-                this.setState({ pending_challenge: false, challenging_player_id: null });
+                this.setState({ pending_challenge: false });
                 console.error(err.stack);
             }
         }
